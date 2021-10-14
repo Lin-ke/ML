@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import math
 from numpy.core.defchararray import count
 from numpy.core.numeric import identity
+from numpy.lib.function_base import gradient
 from numpy.testing._private.utils import print_assert_equal
 
 #loss function:J(z) = sigma(h(x)-y)^2/N
@@ -34,58 +35,43 @@ def sign(z):
         return 0
     else:
         return -1
+#g is the gradient
+def find_a(f,z,y,g,shape):
+    sum1 = 0.0
+    sum2 = 0.0
+    for i in range(0,shape):
+        sum1+=(y[i]-z@f[:,i])*(g.T@f[:,i])
+        sum2+=pow((g.T@f[:,i]),2)
+    a = sum1/sum2
+    return a
+
 def gd(f,z,y,shape,n,times,l):
     #gradient descent
     a = 0.01 #learning rate at beginning
-    temp = np.zeros(n+1)
-    d = 0 #the curracy
-    r1 = 0.000001
-    r2 = 0.01
+    flag = 0 #精细or粗放
     g = 0
-    p = 0
-    count = 0
     for k in range(1,times+1): #batch for k times
+        temp = np.zeros(n+1)
         for i in range(0,shape):
             for j in range(0,n+1):
-                temp[j] = a*((y[i]-z@f[:,i])*f[j][i]+l*(z[j]))
-            z = temp+z
+                temp[j] += (y[i]-z@f[:,i])*f[j][i]-l*z[j]
+        if flag==1:
+            a = find_a(f,z,y,temp,shape)
+        z = a*temp+z
     #g is loss and g is gradient.    
         if k%100 == 0: #每隔100次调整参数
             temp2 = sl(f,z,y,shape)
-            temp3 = np.linalg.norm(temp/a,ord = 1)
-            if g!=0 and (temp2-g>0) : #如果学习反向了
-                a = a*0.8
-                temp2 = g
-                z = temp4
-                flag = 1
-            if p!=0 and (temp3-p>0): #如果梯度反向了
-                if p<r2:
-                    a = a*0.8
-                    z = temp4
-                    temp3 = p
-                    flag = 1
-
-            if abs(temp2-g)<r1 and abs(temp3-p)<r1 :
-                if flag == 0 and (temp2>r2 or temp3 >r2) :
-                    a = a*1.25
-                else:
-                    break
-            g = temp2
-            p = temp3
-            flag = 0
-            print("loss",g)
+            temp3 = np.linalg.norm(temp,ord = 1)
+            print("loss",temp2)
             print("grad:",temp3)
-            print("a:",a)
-            if int(math.log(g,10))!=d:
-                d = int(math.log(g,10))
-                a = a*0.5
-            count = count+1
-            if count==10:
-                a = a*1.2
-                count = 0
-                if a<r1:
-                    break
-            temp4 = z #保存此轮参数
+            if abs(g-temp2)<1e-1:
+                flag = 1
+            if abs(g-temp2)<1e-10:
+                break
+            
+            print(a)
+            g = temp2
+
     return z
 def cong_gra(f,y,z,n,l):
     r = f@y
@@ -125,15 +111,16 @@ def draw(f,z):
     plt.scatter(f[1],y1,s=10,label = "P(x)")
     plt.legend()
     plt.savefig('./test2.jpg')
+    plt.show()
     return
 #samples,(x,sin(x)+e,e~N(0,1)&e<=0.1)
-shape = 10
+shape = 100
 x = np.arange(0,1,1/shape)
 y = np.sin(2*math.pi*x)
 y+=np.random.normal(0,0.1,shape)
 #the polynomial,(z.T*x)
-n = 50
-l = 0
+n = 10
+l = 1e-5
 ed = np.zeros(100)
 z = np.zeros(n+1)
 f = np.empty([n+1,shape],dtype = float)
@@ -141,6 +128,7 @@ for i in range(0,shape):
     f[0,i] = 1
     for j in range(1,n+1):
         f[j,i] = f[j-1,i]*x[i]
-
 z = cong_gra(f,y,z,n,l)
+draw(f,z)
+z = gd(f,z,y,shape,n,10000,l)
 draw(f,z)
