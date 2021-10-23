@@ -14,12 +14,6 @@ def sl(f,z,y,shape):
         sum+=pow((y[i]-np.dot(z,f[:,i])),2)
     return sum/shape
 
-def sl_with_r(f,z,y,shape,l):
-    l = l/2
-    sum = sl(f,z,y,shape)
-    for i in range(0,z.shape[0]):
-        sum+=l*pow(z[i],2)
-    return sum
 #normal equation
 def ne(f,z,y):
     z = np.dot(np.dot(np.linalg.pinv(np.dot(f,f.T)),f),y)
@@ -119,7 +113,7 @@ x = np.arange(0,1,1/shape)
 y = np.sin(2*math.pi*x)
 y+=np.random.normal(0,0.1,shape)
 #the polynomial,(z.T*x)
-n = 10
+n = 50
 l = 1e-5
 ed = np.zeros(100)
 z = np.zeros(n+1)
@@ -130,5 +124,5 @@ for i in range(0,shape):
         f[j,i] = f[j-1,i]*x[i]
 z = cong_gra(f,y,z,n,l)
 draw(f,z)
-z = gd(f,z,y,shape,n,10000,l)
+z = gd(f,z,y,shape,n,1000,l)
 draw(f,z)
